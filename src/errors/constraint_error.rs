@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024, Ignacio Slater M.
+ * 2-Clause BSD License.
+ */
+
 /// Custom error type for representing constraint-related errors.
 ///
 /// This struct is designed to be used as a base for creating specific constraint-related errors
@@ -31,7 +36,7 @@
 /// # Fields
 ///
 /// * `lazy_message` - A closure that computes the error message when the error is constructed.
-struct ConstraintError {
+pub(crate) struct ConstraintError {
     lazy_message: Box<dyn Fn() -> String>,
 }
 

@@ -3,5 +3,4 @@
  * 2-Clause BSD License.
  */
 
-pub mod errors;
-mod constraints;
+pub mod constraints;
