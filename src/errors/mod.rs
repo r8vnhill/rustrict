@@ -3,5 +3,5 @@
  * 2-Clause BSD License.
  */
 
-pub mod constraint_error;
 mod composite_error;
+pub mod constraint_error;

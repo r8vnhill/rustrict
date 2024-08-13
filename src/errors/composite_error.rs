@@ -2,9 +2,9 @@
  * Copyright (c) 2024, Ignacio Slater M.
  * 2-Clause BSD License.
  */
+use expectest::core::{Join, Matcher};
 use std::error::Error;
 use std::sync::Arc;
-use expectest::core::{Join, Matcher};
 
 /// Represents an error that aggregates multiple individual errors into a single composite error.
 ///
@@ -127,13 +127,13 @@ impl std::fmt::Display for CompositeError {
             let error_messages = self
                 .errors
                 .iter()
-                .map(|e: &Arc<dyn Error + Send + Sync>|
+                .map(|e: &Arc<dyn Error + Send + Sync>| {
                     format!(
                         "{{ [{}] {} }}",
                         std::any::type_name::<dyn Error>(),
                         e.to_string()
                     )
-                )
+                })
                 .collect::<Vec<String>>()
                 .join(",\n");
 
@@ -171,6 +171,7 @@ impl std::error::Error for CompositeError {}
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use core::panic;
     use expectest::prelude::*;
     use proptest::collection::vec;
@@ -178,7 +179,6 @@ mod tests {
     use std::error::Error;
     use std::panic::catch_unwind;
     use std::sync::Arc;
-    use super::*;
 
     /// Tests that a `CompositeError` can be successfully created with multiple errors and that
     /// it correctly stores and represents each error.
@@ -242,25 +242,25 @@ mod tests {
     #[test]
     fn composite_error_can_be_created_with_multiple_errors() {
         proptest!(|(messages in vec("[a-zA-Z0-9]{1,50}", 2..50))| {
-        let exceptions: Vec<Arc<dyn Error + Send + Sync>> = messages
-            .into_iter()
-            .map(|msg|
-                Arc::new(std::io::Error::new(std::io::ErrorKind::Other, msg))
-                    as Arc<dyn Error + Send + Sync>
-            ).collect();
+            let exceptions: Vec<Arc<dyn Error + Send + Sync>> = messages
+                .into_iter()
+                .map(|msg|
+                    Arc::new(std::io::Error::new(std::io::ErrorKind::Other, msg))
+                        as Arc<dyn Error + Send + Sync>
+                ).collect();
 
-        let composite = CompositeError::new(exceptions.clone());
+            let composite = CompositeError::new(exceptions.clone());
 
-        // Manually compare the errors by their string representations
-        let composite_errors = composite.errors();
-        expect!(composite_errors.len()).to(be_equal_to(exceptions.len()));
-        for (
-            composite_error, expected_error) in
-                composite_errors.iter().zip(exceptions.iter()
-        ) {
-            expect!(composite_error.to_string()).to(contain(expected_error.to_string()));
-        }
-    });
+            // Manually compare the errors by their string representations
+            let composite_errors = composite.errors();
+            expect!(composite_errors.len()).to(be_equal_to(exceptions.len()));
+            for (
+                composite_error, expected_error) in
+                    composite_errors.iter().zip(exceptions.iter()
+            ) {
+                expect!(composite_error.to_string()).to(contain(expected_error.to_string()));
+            }
+        });
     }
 
     #[test]
@@ -306,7 +306,6 @@ mod tests {
             CompositeError::new(vec![]).errors();
         });
     }
-
 }
 
 /// A struct representing a value to be checked for containment within another value.
@@ -390,7 +389,10 @@ impl Matcher<String, String> for Contains<String> {
         if join.is_assertion() {
             format!(
                 "expected {} contain <{:?}>, at index <{:?}>. Got <{:?}>",
-                join, self.value, actual.find(&self.value), actual
+                join,
+                self.value,
+                actual.find(&self.value),
+                actual
             )
         } else {
             format!("expected {} contain <{:?}>", join, self.value)

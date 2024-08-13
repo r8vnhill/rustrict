@@ -5,7 +5,7 @@
 
 use crate::errors::constraint_error::ConstraintError;
 
-trait Constraint<T> {
+pub trait Constraint<T> {
     /// The validation function that checks if the value meets the constraint criteria.
     fn validator(&self, value: &T) -> bool;
 
