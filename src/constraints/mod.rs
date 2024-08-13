@@ -3,5 +3,5 @@
  * 2-Clause BSD License.
  */
 
-mod collections;
+pub mod collections;
 pub mod constraint;

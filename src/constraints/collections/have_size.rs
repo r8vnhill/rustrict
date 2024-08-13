@@ -2,7 +2,7 @@
  * Copyright (c) 2024, Ignacio Slater M.
  * 2-Clause BSD License.
  */
-
+use std::fmt::Debug;
 use crate::constraints::constraint::Constraint;
 use crate::errors::constraint_error::ConstraintError;
 use std::sync::Arc;
@@ -38,6 +38,12 @@ impl<T> Constraint<Vec<T>> for HaveSize {
     }
 }
 
+impl Debug for HaveSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HaveSize")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -58,14 +64,14 @@ mod tests {
             #[test]
             fn should_generate_an_exception_with_the_specified_description(size: usize, description: String) {
                 let constraint = HaveSize::with_exact_size(size);
-    
+
                 let exception = <HaveSize as Constraint<Vec<u8>>>::generate_exception(&constraint, description.clone());
-    
+
                 expect!(exception.message()).to(be_equal_to(description));
             }
         }
     }
-    
+
     mod when_creating_with_a_predicate {
         use super::*;
 
@@ -78,7 +84,7 @@ mod tests {
 
                 let constraint = HaveSize::new(|size| size > 0);
                 let result = constraint.validate(&collection);
-    
+
                 expect!(result).to(be_true());
             }
 
@@ -90,7 +96,7 @@ mod tests {
 
                 let constraint = HaveSize::new(|size| size <= 5);
                 let result = constraint.validate(&collection);
-    
+
                 expect!(result).to(be_false());
             }
         }

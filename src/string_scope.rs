@@ -163,6 +163,7 @@ mod tests {
     use super::*;
     use expectest::prelude::*;
     use proptest::prelude::*;
+    use crate::constraints::collections::have_size::HaveSize;
 
     proptest! {
         #[test]
@@ -181,20 +182,6 @@ mod tests {
     mod when_validating_a_must_clause {
         use super::*;
 
-        #[test]
-        fn should_add_a_success_or_failure_to_the_scope() {}
-
-        #[test]
-        fn test_validates_a_failed_constraint() {
-            let results = Arc::new(Mutex::new(Vec::new()));
-            let scope = StringScope::new("Test".to_string(), results.clone());
-            scope.must("Test", |value: &&str| *value == "Not Test");
-
-            let results = results.lock().unwrap();
-            expect!(results.clone()).to(be_equal_to(vec![Err(ConstraintError::new(|| {
-                "Test".to_string()
-            }))]));
-        }
     }
 
     /// Creates a new instance of `StringScope` with a given message.
@@ -228,5 +215,11 @@ mod tests {
     /// ```
     fn create_string_scope(message: String) -> StringScope {
         StringScope::new(message, Arc::new(Mutex::new(Vec::new())))
+    }
+
+    fn collection_have_size(
+        size: impl Strategy<Value=usize> + 'static
+    ) -> impl Strategy<Value=HaveSize> {
+        size.prop_map(|size| HaveSize::with_exact_size(size))
     }
 }

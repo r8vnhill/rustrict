@@ -19,6 +19,10 @@ pub trait Constraint<T> {
     /// - `description`: A string describing the reason for the exception.
     /// - Returns: A `ConstraintError` containing the provided description.
     fn generate_exception(&self, description: String) -> ConstraintError;
+    
+    fn generate_error_message(&self, message: &str) -> String {
+        format!("{}: {}", message, self.generate_exception(message.to_string()))
+    }
 }
 
 impl<T, F> Constraint<T> for F
