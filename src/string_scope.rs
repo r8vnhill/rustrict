@@ -2,10 +2,10 @@
  * Copyright (c) 2024, Ignacio Slater M.
  * 2-Clause BSD License.
  */
+use crate::constraints::constraint::Constraint;
+use crate::errors::constraint_error::ConstraintError;
 use std::fmt::{Display, Formatter};
 use std::sync::{Arc, Mutex};
-use crate::errors::constraint_error::ConstraintError;
-use crate::constraints::constraint::Constraint;
 
 /// A scope for validating constraints on a string value.
 ///
@@ -40,7 +40,10 @@ impl StringScope {
     ///
     /// # Returns:
     /// A `StringScope` instance.
-    pub(crate) fn new(message: String, results: Arc<Mutex<Vec<Result<(), ConstraintError>>>>) -> Self {
+    pub(crate) fn new(
+        message: String,
+        results: Arc<Mutex<Vec<Result<(), ConstraintError>>>>,
+    ) -> Self {
         Self {
             message,
             results,
@@ -93,7 +96,7 @@ impl StringScope {
         };
 
         let mut results = self.results.lock().unwrap();
-        results.push(if constraint.validator(&value) == condition {
+        results.push(if constraint.validate(&value) == condition {
             Ok(())
         } else {
             Err(exception())
@@ -141,13 +144,11 @@ impl StringScope {
         let message = self.message.clone(); // Clone the message to have an owned value with 'static lifetime
 
         let mut results = self.results.lock().unwrap();
-        results.push(
-            if predicate() {
-                Ok(())
-            } else {
-                Err(ConstraintError::new(move || message.clone())) // Use the cloned message
-            }
-        );
+        results.push(if predicate() {
+            Ok(())
+        } else {
+            Err(ConstraintError::new(move || message.clone())) // Use the cloned message
+        });
     }
 }
 
@@ -160,20 +161,72 @@ impl Display for StringScope {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proptest::prelude::*;
     use expectest::prelude::*;
+    use proptest::prelude::*;
 
     proptest! {
         #[test]
         fn test_can_be_created_with_a_message(message in ".*") {
-            let scope = StringScope::new(message.clone(), Arc::new(Mutex::new(Vec::new())));
+            let scope = create_string_scope(message.clone());
             expect!(scope.message).to(be_equal_to(message));
         }
 
         #[test]
         fn test_can_be_converted_to_string(message in ".*") {
-            let scope = StringScope::new(message.clone(), Arc::new(Mutex::new(Vec::new())));
+            let scope = create_string_scope(message.clone());
             expect!(scope.to_string()).to(be_equal_to(format!("StringScope({})", message)));
         }
+    }
+
+    mod when_validating_a_must_clause {
+        use super::*;
+
+        #[test]
+        fn should_add_a_success_or_failure_to_the_scope() {}
+
+        #[test]
+        fn test_validates_a_failed_constraint() {
+            let results = Arc::new(Mutex::new(Vec::new()));
+            let scope = StringScope::new("Test".to_string(), results.clone());
+            scope.must("Test", |value: &&str| *value == "Not Test");
+
+            let results = results.lock().unwrap();
+            expect!(results.clone()).to(be_equal_to(vec![Err(ConstraintError::new(|| {
+                "Test".to_string()
+            }))]));
+        }
+    }
+
+    /// Creates a new instance of `StringScope` with a given message.
+    ///
+    /// This helper function simplifies the creation of a `StringScope` by initializing it with
+    /// the provided message and an empty, thread-safe container for validation results. It mirrors
+    /// the concept of a factory function in Kotlin, where you might use such a function to
+    /// encapsulate object creation logic, particularly when additional setup is required.
+    ///
+    /// # Parameters:
+    /// - `message`: A `String` representing the validation message or label associated with the
+    ///     `StringScope`.
+    ///
+    /// # Returns:
+    /// - A `StringScope` instance initialized with the provided message and a new, empty results'
+    ///     container.
+    ///
+    /// # Conceptual Differences:
+    /// - **Thread Safety:** In Rust, the results container is wrapped in an `Arc<Mutex<>>` to
+    ///     ensure thread-safe access and mutation, which is more explicit compared to Kotlin's
+    ///     concurrency mechanisms like coroutines.
+    /// - **Ownership and Lifetimes:** Rust's ownership model requires careful management of data
+    ///     ownership and lifetimes. In this case, the `Arc<Mutex<>>` combination ensures that the
+    ///     data can be safely shared and modified across threads without violating Rust's strict
+    ///     borrowing rules.
+    ///
+    /// # Example Usage:
+    /// ```rust
+    /// let scope = create_string_scope("Test message".to_string());
+    /// // `scope` is now an instance of `StringScope` with the message "Test message"
+    /// ```
+    fn create_string_scope(message: String) -> StringScope {
+        StringScope::new(message, Arc::new(Mutex::new(Vec::new())))
     }
 }
