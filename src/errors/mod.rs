@@ -4,3 +4,4 @@
  */
 
 pub mod constraint_error;
+mod composite_error;
